@@ -8,5 +8,6 @@ urlpatterns = [
     path('test/', views.test, name='test'),
     path('picrotate/', views.picrotate, name='picrotate'),
     path('get-bookmarks/', views.get_bookmarks, name='get_bookmarks'),
-    path('bookmark', views.bookmark, name='bookmark')
+    path('bookmarks/', views.bookmark, name='bookmark'),
+    path('bookmarks/<int:pk>/visit/', views.bookmark_visit, name='bookmark_visit'),
 ]

@@ -1,19 +1,13 @@
 import os
 import json
-from django.shortcuts import render, redirect 
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.conf import settings
 from django.http import JsonResponse
-from django.db import connections
-from .models import Bookmarks
-
-def test(request):
-    try:
-        conn = connections['mysql_db']
-        conn.ensure_connection()
-        return JsonResponse({'status': 'ok', 'message': '✅ MySQL 连接成功！'})
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+from django.db import connections, models
+from .models import Bookmarks, Tags, BookmarkTags
+from django.utils import timezone
+from django.core.paginator import Paginator
 
 def index(request):
     context = {
@@ -53,18 +47,62 @@ def get_bookmarks(request):
     data = list(bookmarks.values())
     return JsonResponse(data, safe=False)
 
-def bookmark(request):
-    result = []
-    filter_keyword = ''
+def test(request):
+    queryset = Bookmarks.objects.prefetch_related('bookmarktags_set__tag').order_by('id')
 
-    if request.method == 'POST':
-        filter_keyword = request.POST.get('filter_keyword', '').strip()
-        if filter_keyword:
-            result = Bookmarks.objects.filter(
-                title__icontains=filter_keyword
-            ).order_by('-id')[:20]
+    data = []
+    for bm in queryset:
+        data.append({
+            'id': bm.id,
+            'title': bm.title,
+            'url': bm.url,
+            # 利用预取结果，不触发额外 SQL
+            'tags': [bt.tag.name for bt in bm.bookmarktags_set.all()]
+        })
+
+    return JsonResponse(data, safe=False)
+
+def bookmark(request):
+    filter_keyword = request.GET.get('keyword', '').strip()
+    tag_slug      = request.GET.get('tag', '').strip()
+    search_in     = request.GET.get('search_in', 'title')  # title | description | all
+
+    queryset = Bookmarks.objects.prefetch_related(
+        'bookmarktags_set__tag'
+    ).order_by('-id')
+
+    if filter_keyword:
+        if search_in == 'description':
+            queryset = queryset.filter(description__icontains=filter_keyword)
+        elif search_in == 'all':
+            queryset = queryset.filter(
+                models.Q(title__icontains=filter_keyword) |
+                models.Q(description__icontains=filter_keyword)
+            )
+        else:  # title (默认)
+            queryset = queryset.filter(title__icontains=filter_keyword)
+
+    if tag_slug:
+        queryset = queryset.filter(bookmarktags__tag__slug=tag_slug)
+
+    paginator  = Paginator(queryset, 15)
+    page_obj   = paginator.get_page(request.GET.get('page', 1))
+    all_tags   = Tags.objects.all().order_by('name')
 
     return render(request, 'app/bookmark.html', {
-        'result': result,
-        'keyword': filter_keyword
+        'page_obj' : page_obj,
+        'keyword'  : filter_keyword,
+        'tag_slug' : tag_slug,
+        'search_in': search_in,
+        'all_tags' : all_tags,
     })
+
+
+def bookmark_visit(request, pk):
+    """记录点击次数并跳转"""
+    bookmark = get_object_or_404(Bookmarks, pk=pk)
+    Bookmarks.objects.filter(pk=pk).update(
+        visit_count=bookmark.visit_count + 1,
+        last_visit=timezone.now()
+    )
+    return redirect(bookmark.url)

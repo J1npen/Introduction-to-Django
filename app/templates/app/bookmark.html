@@ -1,31 +1,269 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN" data-theme="">
 <head>
-    <title>Bookmark</title>
+<meta charset="UTF-8">
+<title>书签</title>
+<style>
+  :root {
+    --bg-page:    #f5f6fa;
+    --bg-card:    #ffffff;
+    --bg-tag:     #e4e7f0;
+    --bg-tag-active: #4f6ef7;
+    --bg-visit:   #f0f2fc;
+    --text-main:  #1a1a2e;
+    --text-muted: #666;
+    --text-hint:  #aaa;
+    --text-tag:   #555;
+    --border:     #e2e4ec;
+    --accent:     #4f6ef7;
+    --accent-h:   #3a57d6;
+    --input-bg:   #ffffff;
+    --radio-bg:   #eef0fb;
+  }
+  [data-theme="dark"] {
+    --bg-page:    #0f1117;
+    --bg-card:    #1c1e27;
+    --bg-tag:     #2a2d3a;
+    --bg-tag-active: #4f6ef7;
+    --bg-visit:   #232638;
+    --text-main:  #e8eaf6;
+    --text-muted: #9ea3b8;
+    --text-hint:  #5c6178;
+    --text-tag:   #b0b4cc;
+    --border:     #2e3145;
+    --accent:     #6b84fa;
+    --accent-h:   #8fa0fb;
+    --input-bg:   #1c1e27;
+    --radio-bg:   #232638;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) {
+      --bg-page:    #0f1117;
+      --bg-card:    #1c1e27;
+      --bg-tag:     #2a2d3a;
+      --bg-tag-active: #4f6ef7;
+      --bg-visit:   #232638;
+      --text-main:  #e8eaf6;
+      --text-muted: #9ea3b8;
+      --text-hint:  #5c6178;
+      --text-tag:   #b0b4cc;
+      --border:     #2e3145;
+      --accent:     #6b84fa;
+      --accent-h:   #8fa0fb;
+      --input-bg:   #1c1e27;
+      --radio-bg:   #232638;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg-page); color: var(--text-main); padding: 24px; transition: background .2s, color .2s; }
+
+  /* 顶栏 */
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  h1 { font-size: 1.5rem; }
+  #theme-btn {
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
+  }
+  #theme-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* 搜索区 */
+  .search-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .search-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-bar input {
+    flex: 1; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.95rem;
+    background: var(--input-bg); color: var(--text-main);
+  }
+  .search-bar input:focus { outline: none; border-color: var(--accent); }
+  .search-bar button {
+    padding: 8px 18px; background: var(--accent); color: #fff;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+  }
+  .search-bar button:hover { background: var(--accent-h); }
+  .search-scope { display: flex; gap: 6px; flex-wrap: wrap; }
+  .search-scope label {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
+    background: var(--radio-bg); color: var(--text-muted);
+    border: 1px solid transparent; user-select: none;
+  }
+  .search-scope input[type="radio"] { display: none; }
+  .search-scope input[type="radio"]:checked + span {
+    color: var(--accent); font-weight: 500;
+  }
+  .search-scope label:has(input:checked) {
+    border-color: var(--accent); background: var(--bg-visit);
+  }
+
+  /* 标签筛选 */
+  .tag-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .tag-filter a {
+    padding: 4px 12px; border-radius: 20px; font-size: 0.82rem;
+    background: var(--bg-tag); color: var(--text-tag); text-decoration: none;
+  }
+  .tag-filter a:hover { opacity: .8; }
+  .tag-filter a.active { background: var(--bg-tag-active); color: #fff; }
+
+  /* 卡片 */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-header { display: flex; align-items: center; gap: 8px; }
+  .card-header img { width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0; }
+  .card-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+  .card-url { font-size: 0.78rem; color: var(--text-hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .card-tags a {
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 10px;
+    background: var(--bg-visit); color: var(--accent); text-decoration: none;
+  }
+  .card-meta { font-size: 0.72rem; color: var(--text-hint); }
+  .visit-btn {
+    display: block; margin-top: 8px; text-align: center;
+    background: var(--bg-visit); color: var(--accent);
+    padding: 6px; border-radius: 6px; text-decoration: none; font-size: 0.85rem;
+    border: 1px solid transparent;
+  }
+  .visit-btn:hover { background: var(--accent); color: #fff; }
+
+  /* 分页 */
+  .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 32px; flex-wrap: wrap; }
+  .pagination a, .pagination span {
+    padding: 6px 12px; border-radius: 6px; font-size: 0.88rem;
+    text-decoration: none; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-muted);
+  }
+  .pagination a:hover { border-color: var(--accent); color: var(--accent); }
+  .pagination .current { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .empty { text-align: center; color: var(--text-hint); margin-top: 48px; font-size: 0.95rem; }
+</style>
 </head>
 <body>
 
-<form method="post">
-    {% csrf_token %}
-    <input type="text" name="filter_keyword" value="{{ keyword }}">
-    <button type="submit">搜索</button>
+<div class="topbar">
+  <h1>📌 我的书签</h1>
+  <button id="theme-btn" onclick="toggleTheme()">切换夜间模式</button>
+</div>
+
+<!-- 搜索 -->
+<form method="get" action="">
+  <div class="search-wrap">
+    <div class="search-bar">
+      <input type="text" name="keyword" value="{{ keyword }}" placeholder="输入关键词…">
+      {% if tag_slug %}<input type="hidden" name="tag" value="{{ tag_slug }}">{% endif %}
+      <button type="submit">搜索</button>
+    </div>
+    <div class="search-scope">
+      <label>
+        <input type="radio" name="search_in" value="title"
+          {% if search_in == 'title' or not search_in %}checked{% endif %}>
+        <span>搜索标题</span>
+      </label>
+      <label>
+        <input type="radio" name="search_in" value="description"
+          {% if search_in == 'description' %}checked{% endif %}>
+        <span>搜索描述</span>
+      </label>
+      <label>
+        <input type="radio" name="search_in" value="all"
+          {% if search_in == 'all' %}checked{% endif %}>
+        <span>标题 + 描述</span>
+      </label>
+    </div>
+  </div>
 </form>
 
-<hr>
+<!-- 标签筛选 -->
+<div class="tag-filter">
+  <a href="?{% if keyword %}keyword={{ keyword }}&search_in={{ search_in }}{% endif %}"
+     class="{% if not tag_slug %}active{% endif %}">全部</a>
+  {% for tag in all_tags %}
+    <a href="?{% if keyword %}keyword={{ keyword }}&search_in={{ search_in }}&{% endif %}tag={{ tag.slug }}"
+       class="{% if tag_slug == tag.slug %}active{% endif %}"
+       {% if tag.color %}style="background:{{ tag.color }}22;color:{{ tag.color }};border-color:{{ tag.color }}44"{% endif %}>
+      {{ tag.name }}
+    </a>
+  {% endfor %}
+</div>
 
-{% if result %}
-    <h3>搜索结果：</h3>
-    <ul>
-        {% for item in result %}
-            <li>
-                <strong>{{ item.title }}</strong><br>
-                <a href="{{ item.url }}">{{ item.url }}</a>
-            </li>
-        {% endfor %}
-    </ul>
+<!-- 卡片 -->
+{% if page_obj %}
+  <div class="grid">
+    {% for item in page_obj %}
+      <div class="card">
+        <div class="card-header">
+          {% if item.favicon_url %}
+            <img src="{{ item.favicon_url }}" alt="" onerror="this.style.display='none'">
+          {% endif %}
+          <span class="card-title" title="{{ item.title }}">{{ item.title }}</span>
+        </div>
+        <div class="card-url">{{ item.url }}</div>
+        {% if item.description %}
+          <div class="card-desc">{{ item.description }}</div>
+        {% endif %}
+        <div class="card-footer">
+          <div class="card-tags">
+            {% for bt in item.bookmarktags_set.all %}
+              <a href="?tag={{ bt.tag.slug }}">{{ bt.tag.name }}</a>
+            {% endfor %}
+          </div>
+          <span class="card-meta">👁 {{ item.visit_count }}</span>
+        </div>
+        <a href="{% url 'app:bookmark_visit' item.pk %}" class="visit-btn" target="_blank">访问 →</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- 分页（透传所有参数） -->
+  {% with base="?keyword="|add:keyword|add:"&search_in="|add:search_in|add:"&tag="|add:tag_slug|add:"&page=" %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="{{ base }}{{ page_obj.previous_page_number }}">‹ 上一页</a>
+    {% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="{{ base }}{{ page_obj.next_page_number }}">下一页 ›</a>
+    {% endif %}
+  </div>
+  {% endwith %}
+
 {% else %}
-    <p>没有找到相关内容</p>
+  <p class="empty">😶 没有找到相关书签</p>
 {% endif %}
 
+<script>
+  const html = document.documentElement;
+  const btn  = document.getElementById('theme-btn');
+
+  function applyTheme(t) {
+    html.setAttribute('data-theme', t);
+    btn.textContent = t === 'dark' ? '切换白天模式' : '切换夜间模式';
+  }
+
+  function toggleTheme() {
+    const cur = html.getAttribute('data-theme');
+    const next = (cur === 'dark') ? 'light' : 'dark';
+    localStorage.setItem('bm-theme', next);
+    applyTheme(next);
+  }
+
+  // 初始化：优先读 localStorage，其次跟系统
+  const saved = localStorage.getItem('bm-theme');
+  if (saved) {
+    applyTheme(saved);
+  } else {
+    const sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(sys);
+  }
+</script>
 </body>
 </html>
