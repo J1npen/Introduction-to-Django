@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>留言板</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1208;
+      --paper: #f5f0e8;
+      --aged: #e8dfc8;
+      --sepia: #c4a882;
+      --rust: #8b4513;
+      --vermillion: #c0392b;
+      --gold: #b8860b;
+      --shadow: rgba(26, 18, 8, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--paper);
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 27px,
+          rgba(196, 168, 130, 0.3) 27px,
+          rgba(196, 168, 130, 0.3) 28px
+        );
+      font-family: 'Noto Sans SC', sans-serif;
+      color: var(--ink);
+      padding: 48px 24px 80px;
+    }
+
+    /* 页面标题 */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--rust);
+      position: relative;
+      display: inline-block;
+    }
+
+    header h1::before,
+    header h1::after {
+      content: '◆';
+      font-size: 1rem;
+      color: var(--gold);
+      vertical-align: middle;
+      margin: 0 12px;
+      opacity: 0.7;
+    }
+
+    header .subtitle {
+      font-size: 0.8rem;
+      color: var(--sepia);
+      letter-spacing: 0.3em;
+      margin-top: 6px;
+    }
+
+    /* 主容器 */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* 留言板 */
+    .board {
+      background: #fdfaf3;
+      border: 1px solid var(--sepia);
+      border-radius: 2px;
+      box-shadow:
+        4px 4px 0 var(--aged),
+        8px 8px 0 rgba(196, 168, 130, 0.4),
+        0 12px 40px var(--shadow);
+      padding: 32px;
+      min-height: 320px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .board::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 48px;
+      width: 1px;
+      height: 100%;
+      background: rgba(192, 57, 43, 0.2);
+    }
+
+    .board-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed var(--sepia);
+    }
+
+    .board-header span {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.85rem;
+      color: var(--sepia);
+      letter-spacing: 0.15em;
+    }
+
+    .msg-count {
+      background: var(--rust);
+      color: #fdfaf3;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--sepia);
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      opacity: 0.7;
+    }
+
+    .empty-state .icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    /* 留言列表 */
+    .message-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .message-item {
+      padding: 14px 0 14px 20px;
+      border-bottom: 1px dotted rgba(196, 168, 130, 0.5);
+      animation: fadeSlideIn 0.4s ease both;
+    }
+
+    .message-item:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-item .meta {
+      font-size: 0.72rem;
+      color: var(--sepia);
+      margin-bottom: 5px;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .message-item .meta::before {
+      content: '✦';
+      color: var(--gold);
+      font-size: 0.6rem;
+    }
+
+    .message-item .text {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--ink);
+      word-break: break-word;
+    }
+
+    /* 输入区域 */
+    .input-area {
+      background: #fdfaf3;
+      border: 1px solid var(--sepia);
+      border-radius: 2px;
+      box-shadow: 3px 3px 0 var(--aged), 0 8px 24px var(--shadow);
+      padding: 24px;
+    }
+
+    .input-label {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.82rem;
+      color: var(--rust);
+      letter-spacing: 0.2em;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      resize: none;
+      height: 72px;
+      background: var(--paper);
+      border: 1px solid var(--sepia);
+      border-radius: 1px;
+      padding: 10px 14px;
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 0.9rem;
+      color: var(--ink);
+      line-height: 1.6;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea::placeholder {
+      color: var(--sepia);
+      opacity: 0.6;
+    }
+
+    textarea:focus {
+      border-color: var(--rust);
+      box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.08);
+    }
+
+    button[type="submit"] {
+      flex-shrink: 0;
+      background: var(--rust);
+      color: #fdfaf3;
+      border: none;
+      border-radius: 1px;
+      padding: 0 22px;
+      height: 72px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 3px 3px 0 rgba(139, 69, 19, 0.35);
+      writing-mode: vertical-rl;
+    }
+
+    button[type="submit"]:hover {
+      background: #a0391a;
+    }
+
+    button[type="submit"]:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 rgba(139, 69, 19, 0.35);
+    }
+
+    /* 角落装饰 */
+    .corner {
+      position: absolute;
+      width: 12px; height: 12px;
+      border-color: var(--gold);
+      border-style: solid;
+      opacity: 0.5;
+    }
+    .corner.tl { top: 6px; left: 6px; border-width: 1px 0 0 1px; }
+    .corner.tr { top: 6px; right: 6px; border-width: 1px 1px 0 0; }
+    .corner.bl { bottom: 6px; left: 6px; border-width: 0 0 1px 1px; }
+    .corner.br { bottom: 6px; right: 6px; border-width: 0 1px 1px 0; }
+
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.9rem; }
+      .input-row { flex-direction: column; }
+      button[type="submit"] { width: 100%; height: 44px; writing-mode: horizontal-tb; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>留言板</h1>
+    <p class="subtitle">GUESTBOOK · 留下你的足迹</p>
+  </header>
+
+  <div class="container">
+
+    <!-- 留言展示区 -->
+    <div class="board">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <div class="board-header">
+        <span>所有留言</span>
+        <span class="msg-count">{{ messages.count }} 条</span>
+      </div>
+
+      {% if messages %}
+        <ul class="message-list">
+          {% for msg in messages %}
+            <li class="message-item">
+              <div class="meta">{{ msg.created_at|date:"Y年m月d日 H:i" }}</div>
+              <div class="text">{{ msg.content }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">
+          <span class="icon">✉</span>
+          还没有留言，来写第一条吧
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 输入区域 -->
+    <div class="input-area">
+      <label class="input-label">写下你的留言</label>
+      <form method="post" action="{% url 'board:index' %}">
+        {% csrf_token %}
+        <div class="input-row">
+          <textarea
+            name="content"
+            placeholder="在此输入你想说的话……"
+            maxlength="500"
+            required
+          ></textarea>
+          <button type="submit">留言</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+</body>
+</html>
